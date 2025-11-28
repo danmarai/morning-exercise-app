@@ -44,7 +44,7 @@ function App() {
   const [previousWorkout, setPreviousWorkout] = useState(null);
   const [workoutData, setWorkoutData] = useState({});
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
-  const [useMockMode, setUseMockMode] = useState(true); // Start with mock mode
+  const [isTestMode, setIsTestMode] = useState(false); // Default to Live Mode
   const [isExerciseRunning, setIsExerciseRunning] = useState(false);
   const [view, setView] = useState('exercises'); // 'exercises' or 'stats'
   const [streak, setStreak] = useState(0);
@@ -79,7 +79,7 @@ function App() {
   // Initialize Google Sheets (or use mock mode)
   useEffect(() => {
     const initializeStorage = async () => {
-      if (useMockMode) {
+      if (isTestMode) {
         googleSheetsService.useMockMode();
         const prevWorkout = await googleSheetsService.mockGetPreviousWorkout();
         setPreviousWorkout(prevWorkout);
@@ -106,7 +106,7 @@ function App() {
     };
 
     initializeStorage();
-  }, [useMockMode]);
+  }, [isTestMode]);
 
   // Start workout
   const startWorkout = () => {
@@ -178,14 +178,14 @@ function App() {
     };
 
     // Save to storage
-    if (useMockMode) {
+    if (isTestMode) {
       await googleSheetsService.mockSaveWorkout(finalData);
     } else {
       await googleSheetsService.saveWorkout(finalData);
     }
 
     // Update streak & rank & PBs immediately after save
-    if (useMockMode) {
+    if (isTestMode) {
       const allWorkouts = await googleSheetsService.mockGetWorkouts();
       setStreak(calculateStreak(allWorkouts));
       setRank(calculateRank(allWorkouts.length));
@@ -204,27 +204,48 @@ function App() {
     <ErrorBoundary>
       <div className="app">
         <header className="app-header">
-          <button
-            className="view-toggle-btn"
-            onClick={() => setView(view === 'exercises' ? 'stats' : 'exercises')}
-          >
-            {view === 'exercises' ? '📊 Stats' : '💪 Exercises'}
-          </button>
-          <h1>💪 Morning Exercise Tracker</h1>
-          <div className="streak-counter" title="Current Streak">
-            <span className="streak-icon">🔥</span>
-            <span className="streak-count">{streak}</span>
+          <div className="header-left">
+            <button
+              className="view-toggle-btn"
+              onClick={() => setView(view === 'exercises' ? 'stats' : 'exercises')}
+            >
+              {view === 'exercises' ? '📊 Stats' : '💪 Exercises'}
+            </button>
           </div>
-          {rank && (
-            <div className="rank-badge" style={{ borderColor: rank.currentRank.color }} title={`Rank: ${rank.currentRank.title}`}>
-              <span className="rank-title" style={{ color: rank.currentRank.color }}>{rank.currentRank.title}</span>
+
+          <div className="header-center">
+            <h1>💪 Morning Exercise Tracker</h1>
+            <div className="streak-container">
+              <div className="streak-counter" title="Current Streak">
+                <span className="streak-icon">🔥</span>
+                <span className="streak-count">{streak}</span>
+              </div>
+              {rank && (
+                <div className="rank-badge" style={{ borderColor: rank.currentRank.color }} title={`Rank: ${rank.currentRank.title}`}>
+                  <span className="rank-title" style={{ color: rank.currentRank.color }}>{rank.currentRank.title}</span>
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          <div className="header-right">
+            <div className="mode-toggle">
+              <label className="switch">
+                <input
+                  type="checkbox"
+                  checked={isTestMode}
+                  onChange={() => setIsTestMode(!isTestMode)}
+                />
+                <span className="slider round"></span>
+              </label>
+              <span className="mode-label">{isTestMode ? 'TEST' : 'LIVE'}</span>
+            </div>
+          </div>
         </header>
 
         <main className="app-main">
           {view === 'stats' ? (
-            <Stats />
+            <Stats isTestMode={isTestMode} />
           ) : (
             <>
               {state === STATES.WELCOME && (
@@ -256,7 +277,7 @@ function App() {
                     Start Workout
                   </button>
 
-                  {!useMockMode && !isGoogleConnected && (
+                  {!isTestMode && !isGoogleConnected && (
                     <div className="setup-section">
                       <p>Connect to Google Sheets to save your progress</p>
                       <button className="btn btn-secondary">

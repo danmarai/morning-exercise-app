@@ -54,3 +54,19 @@ Since your app is now hosted on a live URL (e.g., `https://morning-exercise-app.
 2.  Click "Connect Google Sheets".
 3.  Complete the Google Sign-In flow.
 4.  Enjoy your live app!
+
+## How to Update
+
+Since you connected Vercel to your GitHub repository, **updates are automatic!**
+
+Whenever you want to release new features or fixes:
+
+1.  **Save your changes** locally.
+2.  **Commit and Push** to GitHub:
+    ```bash
+    git add .
+    git commit -m "Description of your changes"
+    git push origin main
+    ```
+3.  **Wait**: Vercel detects the new commit and automatically builds and deploys the new version (usually takes 1-2 minutes).
+4.  **Refresh**: Go to your live URL and refresh to see the changes.

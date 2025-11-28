@@ -101,6 +101,14 @@ class GoogleSheetsService {
     }
   }
 
+  // Get spreadsheet URL
+  getSpreadsheetUrl() {
+    if (this.spreadsheetId) {
+      return `https://docs.google.com/spreadsheets/d/${this.spreadsheetId}`;
+    }
+    return null;
+  }
+
   // Create new spreadsheet
   async createSpreadsheet() {
     try {

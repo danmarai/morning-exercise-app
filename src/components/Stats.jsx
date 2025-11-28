@@ -1,14 +1,20 @@
 import { useState, useEffect } from 'react';
 import googleSheetsService from '../services/googleSheets';
 
-const Stats = () => {
+const Stats = ({ isTestMode }) => {
     const [statsData, setStatsData] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             setLoading(true);
-            const workouts = await googleSheetsService.getWorkouts();
+            let workouts = [];
+
+            if (isTestMode) {
+                workouts = await googleSheetsService.mockGetWorkouts();
+            } else {
+                workouts = await googleSheetsService.getWorkouts();
+            }
 
             // Process data
             const processedData = processStats(workouts);
@@ -17,7 +23,7 @@ const Stats = () => {
         };
 
         fetchStats();
-    }, []);
+    }, [isTestMode]);
 
     const processStats = (workouts) => {
         // 1. Sort workouts by date (ascending) to calculate score
@@ -85,7 +91,19 @@ const Stats = () => {
 
     return (
         <div className="stats-container">
-            <h2>30-Day Stats</h2>
+            <div className="stats-header">
+                <h2>30-Day Stats</h2>
+                {!isTestMode && googleSheetsService.getSpreadsheetUrl() && (
+                    <a
+                        href={googleSheetsService.getSpreadsheetUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="sheet-link"
+                    >
+                        View in Google Sheets ↗
+                    </a>
+                )}
+            </div>
             <div className="stats-table-wrapper">
                 <table className="stats-table">
                     <thead>
