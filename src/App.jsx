@@ -6,6 +6,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 import googleSheetsService from './services/googleSheets';
 import './styles/App.css';
 import Stats from './components/Stats';
+import LootBox from './components/LootBox';
+import { calculateStreak } from './utils/streakCalculator';
+import { calculateRank } from './utils/rankCalculator';
+import rewardsService from './services/rewardsService';
+import { getPersonalBests } from './services/ghostService';
 
 // Workout states
 const STATES = {
@@ -42,6 +47,11 @@ function App() {
   const [useMockMode, setUseMockMode] = useState(true); // Start with mock mode
   const [isExerciseRunning, setIsExerciseRunning] = useState(false);
   const [view, setView] = useState('exercises'); // 'exercises' or 'stats'
+  const [streak, setStreak] = useState(0);
+  const [rank, setRank] = useState(null);
+  const [showLootBox, setShowLootBox] = useState(false);
+  const [reward, setReward] = useState(null);
+  const [personalBests, setPersonalBests] = useState({ barHang: 0, plank: 0, pushups: 0 });
 
   // Calculate difficulty based on previous workout ratings
   const calculateDifficulty = (prevWorkout) => {
@@ -76,11 +86,22 @@ function App() {
         if (prevWorkout) {
           setExercises(calculateDifficulty(prevWorkout));
         }
+
+        // Calculate streak & rank & PBs
+        const allWorkouts = await googleSheetsService.mockGetWorkouts();
+        setStreak(calculateStreak(allWorkouts));
+        setRank(calculateRank(allWorkouts.length));
+        setPersonalBests(getPersonalBests(allWorkouts));
+
         setIsGoogleConnected(true);
       } else {
         // Initialize Google API (requires setup)
         // await googleSheetsService.initializeGapi();
         // await googleSheetsService.initializeGis();
+
+        // In real mode, we'd also fetch workouts here to calculate streak
+        // const allWorkouts = await googleSheetsService.getWorkouts();
+        // setStreak(calculateStreak(allWorkouts));
       }
     };
 
@@ -145,9 +166,15 @@ function App() {
   };
 
   const handleRating3Submit = async (rating) => {
+    // Generate reward
+    const newReward = rewardsService.getRandomReward();
+    setReward(newReward);
+    setShowLootBox(true);
+
     const finalData = {
       ...workoutData,
-      pushupsRating: rating
+      pushupsRating: rating,
+      bonus: newReward.type === 'bonus' ? newReward.content : 0
     };
 
     // Save to storage
@@ -155,6 +182,17 @@ function App() {
       await googleSheetsService.mockSaveWorkout(finalData);
     } else {
       await googleSheetsService.saveWorkout(finalData);
+    }
+
+    // Update streak & rank & PBs immediately after save
+    if (useMockMode) {
+      const allWorkouts = await googleSheetsService.mockGetWorkouts();
+      setStreak(calculateStreak(allWorkouts));
+      setRank(calculateRank(allWorkouts.length));
+      setPersonalBests(getPersonalBests(allWorkouts));
+    } else {
+      // const allWorkouts = await googleSheetsService.getWorkouts();
+      // setStreak(calculateStreak(allWorkouts));
     }
 
     setState(STATES.COMPLETE);
@@ -173,6 +211,15 @@ function App() {
             {view === 'exercises' ? '📊 Stats' : '💪 Exercises'}
           </button>
           <h1>💪 Morning Exercise Tracker</h1>
+          <div className="streak-counter" title="Current Streak">
+            <span className="streak-icon">🔥</span>
+            <span className="streak-count">{streak}</span>
+          </div>
+          {rank && (
+            <div className="rank-badge" style={{ borderColor: rank.currentRank.color }} title={`Rank: ${rank.currentRank.title}`}>
+              <span className="rank-title" style={{ color: rank.currentRank.color }}>{rank.currentRank.title}</span>
+            </div>
+          )}
         </header>
 
         <main className="app-main">
@@ -232,6 +279,7 @@ function App() {
                     isRunning={isExerciseRunning}
                     onStart={handleExerciseStart}
                     onStop={handleExerciseStop}
+                    ghostTarget={personalBests.barHang}
                   />
                   <ContentDisplay isActive={isExerciseRunning} />
                 </>
@@ -256,6 +304,7 @@ function App() {
                     isRunning={isExerciseRunning}
                     onStart={handleExerciseStart}
                     onStop={handleExerciseStop}
+                    ghostTarget={personalBests.plank}
                   />
                   <ContentDisplay isActive={isExerciseRunning} />
                 </>
@@ -277,6 +326,7 @@ function App() {
                     onComplete={handleExercise3Complete}
                     isActive={true}
                     icon="💪"
+                    ghostTarget={personalBests.pushups}
                   />
                   <ContentDisplay isActive={true} />
                 </>
@@ -321,11 +371,21 @@ function App() {
           )}
         </main>
 
+        {showLootBox && reward && (
+          <LootBox
+            reward={reward}
+            onClose={() => {
+              setShowLootBox(false);
+              setReward(null);
+            }}
+          />
+        )}
+
         <footer className="app-footer">
           <p>Stay strong! 💪</p>
         </footer>
       </div>
-    </ErrorBoundary >
+    </ErrorBoundary>
   );
 }
 

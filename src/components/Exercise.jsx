@@ -11,7 +11,8 @@ const Exercise = ({
   icon,
   isRunning,
   onStart,
-  onStop
+  onStop,
+  ghostTarget
 }) => {
   const [isCompleted, setIsCompleted] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
@@ -50,6 +51,12 @@ const Exercise = ({
       <div className="exercise-header">
         {icon && <div className="exercise-icon">{icon}</div>}
         <h2 className="exercise-name">{name}</h2>
+        {ghostTarget > 0 && (
+          <div className="ghost-target" title="Your Personal Best">
+            <span className="ghost-icon">👻</span>
+            <span className="ghost-label">Best: {ghostTarget}{type === 'timer' ? 's' : ''}</span>
+          </div>
+        )}
       </div>
 
       <div className="exercise-content">

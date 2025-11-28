@@ -1,7 +1,7 @@
 // Google Sheets API integration with OAuth
 
-const CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // User will need to configure this
-const API_KEY = 'YOUR_GOOGLE_API_KEY'; // User will need to configure this
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || 'YOUR_GOOGLE_API_KEY';
 const DISCOVERY_DOC = 'https://sheets.googleapis.com/$discovery/rest?version=v4';
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
@@ -220,7 +220,8 @@ class GoogleSheetsService {
       workoutData.plankRating,
       workoutData.pushupsTarget,
       workoutData.pushupsCompleted,
-      workoutData.pushupsRating
+      workoutData.pushupsRating,
+      workoutData.bonus || 0
     ];
 
     return await this.appendRow(row);
