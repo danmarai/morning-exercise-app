@@ -12,6 +12,8 @@ import { calculateRank } from './utils/rankCalculator';
 import rewardsService from './services/rewardsService';
 import { getPersonalBests } from './services/ghostService';
 
+import ExternalWorkout from './components/ExternalWorkout';
+
 // Workout states
 const STATES = {
   WELCOME: 'welcome',
@@ -22,7 +24,8 @@ const STATES = {
   EXERCISE_3: 'exercise_3',
   RATING_3: 'rating_3',
   COMPLETE: 'complete',
-  SETUP: 'setup'
+  SETUP: 'setup',
+  EXTERNAL_WORKOUT: 'external_workout'
 };
 
 // Default exercise values
@@ -277,6 +280,14 @@ function App() {
                     Start Workout
                   </button>
 
+                  <button
+                    className="btn btn-secondary"
+                    style={{ marginTop: '1rem' }}
+                    onClick={() => setState(STATES.EXTERNAL_WORKOUT)}
+                  >
+                    Log External Workout 📸
+                  </button>
+
                   {!isTestMode && !isGoogleConnected && (
                     <div className="setup-section">
                       <p>Connect to Google Sheets to save your progress</p>
@@ -390,6 +401,23 @@ function App() {
               )}
             </>
           )}
+
+          {state === STATES.EXTERNAL_WORKOUT && (
+            <ExternalWorkout
+              onComplete={(points) => {
+                // Handle completion (maybe show loot box or just go to complete)
+                // For now, let's just go to complete with a summary
+                setWorkoutData({
+                  bonus: points,
+                  barHangCompleted: 0, plankCompleted: 0, pushupsCompleted: 0,
+                  barHangTarget: 0, plankTarget: 0, pushupsTarget: 0
+                });
+                setState(STATES.COMPLETE);
+              }}
+              onCancel={() => setState(STATES.WELCOME)}
+              isTestMode={isTestMode}
+            />
+          )}
         </main>
 
         {showLootBox && reward && (
@@ -406,7 +434,7 @@ function App() {
           <p>Stay strong! 💪</p>
         </footer>
       </div>
-    </ErrorBoundary>
+    </ErrorBoundary >
   );
 }
 
