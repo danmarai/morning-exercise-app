@@ -28,10 +28,12 @@ git push origin main
     *   **Build Command**: `npm run build` (default).
     *   **Output Directory**: `dist` (default).
 5.  **Environment Variables**:
-    *   Click to expand the "Environment Variables" section.
-    *   Add the following variables (get these from your Google Cloud Console):
+    *   Go to **Settings** > **Environment Variables**.
+    *   Add the following variables:
         *   `VITE_GOOGLE_CLIENT_ID`: Your Google Client ID.
         *   `VITE_GOOGLE_API_KEY`: Your Google API Key.
+        *   `OPENAI_API_KEY`: Your OpenAI API Key (starts with `sk-...`).
+    *   Click **Save**.
 6.  Click **"Deploy"**.
 
 ## Step 3: Configure Google Cloud Console

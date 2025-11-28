@@ -5,7 +5,6 @@ import googleSheetsService from '../services/googleSheets';
 const ExternalWorkout = ({ onComplete, onCancel, isTestMode }) => {
     const [file, setFile] = useState(null);
     const [preview, setPreview] = useState(null);
-    const [apiKey, setApiKey] = useState(localStorage.getItem('openai_api_key') || '');
     const [analyzing, setAnalyzing] = useState(false);
     const [analysisResult, setAnalysisResult] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -24,17 +23,16 @@ const ExternalWorkout = ({ onComplete, onCancel, isTestMode }) => {
     };
 
     const handleAnalyze = async () => {
-        if (!file || !apiKey) return;
+        if (!file) return;
 
         setAnalyzing(true);
         setError(null);
-        localStorage.setItem('openai_api_key', apiKey); // Save key for convenience
 
         try {
-            const stats = await openaiService.extractWorkoutStats(preview, apiKey);
+            const stats = await openaiService.extractWorkoutStats(preview);
             setAnalysisResult(stats);
         } catch (err) {
-            setError("Failed to analyze image. Check your API Key and try again.");
+            setError("Failed to analyze image. Please try again.");
             console.error(err);
         } finally {
             setAnalyzing(false);
@@ -85,17 +83,6 @@ const ExternalWorkout = ({ onComplete, onCancel, isTestMode }) => {
 
             {!analysisResult ? (
                 <div className="upload-section">
-                    <div className="form-group">
-                        <label>OpenAI API Key</label>
-                        <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="sk-..."
-                        />
-                        <small>Stored locally in your browser.</small>
-                    </div>
-
                     <div className="file-drop-area">
                         <input type="file" accept="image/*" onChange={handleFileChange} />
                         {preview ? (
@@ -108,7 +95,7 @@ const ExternalWorkout = ({ onComplete, onCancel, isTestMode }) => {
                     <button
                         className="btn btn-primary"
                         onClick={handleAnalyze}
-                        disabled={!file || !apiKey || analyzing}
+                        disabled={!file || analyzing}
                     >
                         {analyzing ? 'Analyzing...' : 'Analyze Photo 🪄'}
                     </button>
