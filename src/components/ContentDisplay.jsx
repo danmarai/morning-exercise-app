@@ -1,15 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { quotes, jokes } from '../data/quotesAndJokes';
+import { quotes as fallbackQuotes, jokes as fallbackJokes } from '../data/quotesAndJokes';
 import { useTextToSpeech } from '../hooks/useTextToSpeech';
+import googleSheetsService from '../services/googleSheets';
 
-const ContentDisplay = ({ isActive }) => {
+const ContentDisplay = ({ isActive, onContentPlayed }) => {
     const [content, setContent] = useState(null);
+    const [library, setLibrary] = useState({ quotes: [], jokes: [] });
     const { speak, cancel } = useTextToSpeech();
     const timeoutRef = useRef(null);
     const isMounted = useRef(true);
     const nextTypeRef = useRef('quote');
 
-    const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
+    // Fetch content on mount
+    useEffect(() => {
+        const loadContent = async () => {
+            const data = await googleSheetsService.getContent();
+            if (data.quotes.length > 0 || data.jokes.length > 0) {
+                console.log(`Loaded ${data.quotes.length} quotes and ${data.jokes.length} jokes from Sheets`);
+                setLibrary(data);
+            } else {
+                console.log('Using fallback content');
+                setLibrary({ quotes: fallbackQuotes, jokes: fallbackJokes });
+            }
+        };
+        loadContent();
+    }, []);
+
+    const getRandomItem = (array) => {
+        if (!array || array.length === 0) return "Loading...";
+        const item = array[Math.floor(Math.random() * array.length)];
+        // Handle object vs string (Sheets returns objects for quotes, strings for jokes usually, but let's normalize)
+        if (typeof item === 'object' && item.text) return item.text;
+        return item;
+    };
 
     const isActiveRef = useRef(isActive);
 
@@ -20,11 +43,20 @@ const ContentDisplay = ({ isActive }) => {
     const cycleContent = useCallback(() => {
         if (!isActiveRef.current || !isMounted.current) return;
 
+        // Ensure we have content
+        const currentQuotes = library.quotes.length > 0 ? library.quotes : fallbackQuotes;
+        const currentJokes = library.jokes.length > 0 ? library.jokes : fallbackJokes;
+
         console.log('Cycling content...');
         const type = nextTypeRef.current;
-        const text = type === 'quote' ? getRandomItem(quotes) : getRandomItem(jokes);
+        const text = type === 'quote' ? getRandomItem(currentQuotes) : getRandomItem(currentJokes);
 
         setContent({ type, text });
+
+        // Report back to parent
+        if (onContentPlayed) {
+            onContentPlayed({ type, text });
+        }
 
         // Speak the content
         speak(text, 0.8, () => {
@@ -37,7 +69,7 @@ const ContentDisplay = ({ isActive }) => {
                 }, 5000);
             }
         });
-    }, [speak]);
+    }, [speak, library, onContentPlayed]);
 
     useEffect(() => {
         isMounted.current = true;

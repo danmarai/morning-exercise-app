@@ -17,11 +17,13 @@ const Exercise = ({
   const [isCompleted, setIsCompleted] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  const handleTimerComplete = () => {
+  // This is now called manually when user stops the timer (even in overtime)
+  const handleFinish = () => {
     if (onStop) onStop();
     setIsCompleted(true);
     if (onComplete) {
-      onComplete(target); // For timer-based, completed = target
+      // Pass the actual elapsed time (which includes overtime)
+      onComplete(elapsedTime);
     }
   };
 
@@ -64,10 +66,11 @@ const Exercise = ({
           <>
             <Timer
               duration={target}
-              onComplete={handleTimerComplete}
+              onComplete={() => { }} // No auto-complete anymore
               isRunning={isRunning}
               onStop={onStop}
               onTimeUpdate={setElapsedTime}
+              onFinish={handleFinish}
             />
 
             {!isCompleted && !isRunning && (
@@ -83,7 +86,7 @@ const Exercise = ({
               <>
                 <button
                   className="btn btn-danger btn-large"
-                  onClick={onStop}
+                  onClick={handleFinish}
                 >
                   STOP
                 </button>

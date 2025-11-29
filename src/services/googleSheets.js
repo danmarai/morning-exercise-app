@@ -17,6 +17,10 @@ class GoogleSheetsService {
 
   // Initialize the Google API client
   async initializeGapi() {
+    console.log("Initializing GAPI...");
+    console.log("Client ID present:", !!CLIENT_ID);
+    console.log("API Key present:", !!API_KEY);
+
     return new Promise((resolve) => {
       if (typeof gapi === 'undefined') {
         console.warn('Google API not loaded. Add the script tag to index.html');
@@ -25,12 +29,18 @@ class GoogleSheetsService {
       }
 
       gapi.load('client', async () => {
-        await gapi.client.init({
-          apiKey: API_KEY,
-          discoveryDocs: [DISCOVERY_DOC],
-        });
-        gapiInited = true;
-        resolve(true);
+        try {
+          await gapi.client.init({
+            apiKey: API_KEY,
+            discoveryDocs: [DISCOVERY_DOC],
+          });
+          gapiInited = true;
+          console.log("GAPI Initialized successfully");
+          resolve(true);
+        } catch (err) {
+          console.error("GAPI Init Error:", err);
+          resolve(false);
+        }
       });
     });
   }
@@ -304,6 +314,177 @@ class GoogleSheetsService {
     } catch (error) {
       console.error('Error getting workouts:', error);
       return [];
+    }
+  }
+  // Upload image to Google Drive
+  async uploadImageToDrive(file) {
+    if (!this.isSignedIn) await this.authenticate();
+
+    const metadata = {
+      'name': `workout_${Date.now()}_${file.name}`,
+      'mimeType': file.type
+    };
+
+    const accessToken = gapi.client.getToken().access_token;
+    const form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+    form.append('file', file);
+
+    const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink', {
+      method: 'POST',
+      headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+      body: form
+    });
+
+    const data = await response.json();
+    return data.webViewLink;
+  }
+
+  // Ensure "External Workouts" sheet exists
+  async ensureExternalSheetExists() {
+    const metadata = await this.getSpreadsheetMetadata();
+    const sheet = metadata.sheets.find(s => s.properties.title === 'External Workouts');
+
+    if (!sheet) {
+      await gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        resource: {
+          requests: [{
+            addSheet: {
+              properties: { title: 'External Workouts' }
+            }
+          }]
+        }
+      });
+
+      // Add headers
+      await gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'External Workouts!A:H',
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [['Date', 'Type', 'Duration', 'Calories', 'Distance', 'Points', 'Image Link', 'Raw Data']]
+        }
+      });
+    }
+  }
+
+  // Save external workout
+  async saveExternalWorkout(workoutData) {
+    if (!this.isSignedIn) await this.authenticate();
+    await this.ensureExternalSheetExists();
+
+    const row = [
+      workoutData.date,
+      workoutData.type,
+      workoutData.duration,
+      workoutData.calories,
+      workoutData.distance,
+      workoutData.points,
+      workoutData.imageLink,
+      JSON.stringify(workoutData.rawJson)
+    ];
+
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: 'External Workouts!A:H',
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [row] }
+    });
+  }
+
+  // Ensure "Content" sheet exists
+  async ensureContentSheetExists() {
+    const metadata = await this.getSpreadsheetMetadata();
+    const sheet = metadata.sheets.find(s => s.properties.title === 'Content');
+
+    if (!sheet) {
+      await gapi.client.sheets.spreadsheets.batchUpdate({
+        spreadsheetId: this.spreadsheetId,
+        resource: {
+          requests: [{
+            addSheet: {
+              properties: { title: 'Content' }
+            }
+          }]
+        }
+      });
+
+      // Add headers
+      await gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: this.spreadsheetId,
+        range: 'Content!A:C',
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [['Type', 'Text', 'Author/Source']]
+        }
+      });
+    }
+  }
+
+  // Save a batch of content
+  async saveContentBatch(data) {
+    if (!this.isSignedIn) await this.authenticate();
+    await this.ensureContentSheetExists();
+
+    const rows = [];
+
+    // Process Quotes
+    data.quotes.forEach(q => {
+      rows.push(['quote', q.text, q.author || 'Unknown']);
+    });
+
+    // Process Jokes
+    data.jokes.forEach(j => {
+      rows.push(['joke', j.text, '']);
+    });
+
+    await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: 'Content!A:C',
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: rows }
+    });
+  }
+
+  // Get all content
+  async getContent() {
+    if (this.isMockMode) {
+      // Return default content if in mock mode
+      return { quotes: [], jokes: [] };
+    }
+
+    try {
+      await this.ensureContentSheetExists();
+
+      const response = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: this.spreadsheetId,
+        range: 'Content!A:C'
+      });
+
+      const rows = response.result.values || [];
+      if (rows.length <= 1) return { quotes: [], jokes: [] };
+
+      const quotes = [];
+      const jokes = [];
+
+      // Skip header
+      rows.slice(1).forEach(row => {
+        const type = row[0];
+        const text = row[1];
+        const author = row[2];
+
+        if (type === 'quote') {
+          quotes.push({ text, author });
+        } else if (type === 'joke') {
+          jokes.push(text);
+        }
+      });
+
+      return { quotes, jokes };
+    } catch (error) {
+      console.error('Error getting content:', error);
+      return { quotes: [], jokes: [] };
     }
   }
 }
