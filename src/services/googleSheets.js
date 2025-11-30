@@ -454,6 +454,12 @@ class GoogleSheetsService {
       return { quotes: [], jokes: [] };
     }
 
+    // Safety check: if API is not initialized or not connected, return empty
+    if (!gapi.client || !gapi.client.sheets || !this.spreadsheetId) {
+      console.warn('Google Sheets API not ready or not connected. Using fallback content.');
+      return { quotes: [], jokes: [] };
+    }
+
     try {
       await this.ensureContentSheetExists();
 

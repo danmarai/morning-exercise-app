@@ -57,15 +57,19 @@ const Timer = ({ duration, onComplete, isRunning, onStop, onTimeUpdate, onFinish
 
         // Update elapsed time in parent
         // If newTimeLeft is negative (overtime), duration - newTimeLeft > duration
-        if (onTimeUpdate) {
-          onTimeUpdate(duration - newTimeLeft);
-        }
         return newTimeLeft;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, onComplete, duration, onTimeUpdate]);
+  }, [isRunning, onComplete, duration]);
+
+  // Sync time with parent
+  useEffect(() => {
+    if (onTimeUpdate) {
+      onTimeUpdate(duration - timeLeft);
+    }
+  }, [timeLeft, duration, onTimeUpdate]);
 
   const formatTime = (seconds) => {
     const absSeconds = Math.abs(seconds);

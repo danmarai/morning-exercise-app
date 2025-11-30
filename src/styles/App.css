@@ -779,6 +779,90 @@ body {
   }
 }
 
+/* Enable Audio Prompt Styles */
+.content-display-box.enable-audio-prompt {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border: 2px solid var(--warning-color);
+  padding: 2rem;
+}
+
+.enable-audio-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.enable-audio-message {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.enable-audio-btn {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+  background: var(--warning-color) !important;
+  box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+}
+
+.enable-audio-btn:hover {
+  background: #F57C00 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
+}
+
+/* Audio Enabled Indicator */
+.content-display-box.audio-enabled-indicator {
+  background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+  border: 2px solid var(--success-color);
+  padding: 1rem 1.5rem;
+}
+
+.audio-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.audio-status-icon {
+  font-size: 1.5rem;
+  animation: fadeIn 0.5s ease-in;
+}
+
+.audio-status-text {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--success-color);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Small audio status indicator on content */
+.audio-status-small {
+  margin-top: 0.5rem;
+  opacity: 0.6;
+}
+
+.audio-status-icon-small {
+  font-size: 0.9rem;
+}
+
 /* Stats View Styles */
 .view-toggle-btn {
   position: absolute;

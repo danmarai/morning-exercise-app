@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Exercise from './components/Exercise';
 import DifficultyRating from './components/DifficultyRating';
 import ContentDisplay from './components/ContentDisplay';
@@ -14,6 +14,7 @@ import rewardsService from './services/rewardsService';
 import { getPersonalBests } from './services/ghostService';
 
 import ExternalWorkout from './components/ExternalWorkout';
+import VoiceTest from './components/VoiceTest';
 
 // Workout states
 const STATES = {
@@ -55,6 +56,7 @@ function App() {
   const [rank, setRank] = useState(null);
   const [showLootBox, setShowLootBox] = useState(false);
   const [showContentManager, setShowContentManager] = useState(false);
+  const [showVoiceTest, setShowVoiceTest] = useState(false);
   const [reward, setReward] = useState(null);
   const [personalBests, setPersonalBests] = useState({ barHang: 0, plank: 0, pushups: 0 });
   const [sessionContent, setSessionContent] = useState([]); // Track jokes/quotes heard
@@ -102,8 +104,12 @@ function App() {
         setIsGoogleConnected(true);
       } else {
         // Initialize Google API (requires setup)
-        // await googleSheetsService.initializeGapi();
-        // await googleSheetsService.initializeGis();
+        try {
+          await googleSheetsService.initializeGapi();
+          await googleSheetsService.initializeGis();
+        } catch (error) {
+          console.error("Failed to initialize Google APIs:", error);
+        }
 
         // In real mode, we'd also fetch workouts here to calculate streak
         // But we wait for connection
@@ -128,13 +134,13 @@ function App() {
     setIsExerciseRunning(false);
   };
 
-  const handleContentPlayed = (item) => {
+  const handleContentPlayed = useCallback((item) => {
     setSessionContent(prev => {
       // Avoid duplicates if the same item plays twice
       if (prev.some(i => i.text === item.text)) return prev;
       return [...prev, item];
     });
-  };
+  }, []);
 
   const handleGoogleConnect = async () => {
     try {
@@ -352,6 +358,16 @@ function App() {
                       Manage Content 📚
                     </button>
                   )}
+
+                  <button
+                    className="btn btn-secondary"
+                    style={{ marginTop: '1rem' }}
+                    onClick={() => setShowVoiceTest(!showVoiceTest)}
+                  >
+                    {showVoiceTest ? 'Hide' : 'Test'} Voice Settings 🎤
+                  </button>
+
+                  {showVoiceTest && <VoiceTest />}
                 </div>
               )}
 
